@@ -1,3 +1,4 @@
+import base64
 import json
 import geopandas as gpd
 import numpy as np
