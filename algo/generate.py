@@ -239,46 +239,49 @@ def detect_slopes(dem_array):
     return slope_normalized.astype(np.float32)
 
 def detect_roads(rgb_image):
-    print("Детекция существующих дорог (упрощенная)...")
+    print("Детекция дорог с использованием модели из Hugging Face...")
     if rgb_image is None:
         print("ВНИМАНИЕ: Нет RGB изображения для детекции дорог.")
         return np.zeros((IMAGE_SIZE, IMAGE_SIZE), dtype=np.uint8)
 
     try:
+        from transformers import AutoImageProcessor, AutoModelForSemanticSegmentation
+        import torch
+
+        model_name = "nvidia/segformer-b5-finetuned-cityscapes-1024-1024"
+        processor = AutoImageProcessor.from_pretrained(model_name)
+        model = AutoModelForSemanticSegmentation.from_pretrained(model_name)
+
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model.to(device)
+
         if rgb_image.mode == 'RGBA':
-             rgb_array = np.array(rgb_image)
-             alpha_mask = rgb_array[:, :, 3] > 0
-             rgb_array_bgr = cv2.cvtColor(rgb_array[:, :, :3], cv2.COLOR_RGB2BGR)
+            rgb_pil = rgb_image.convert('RGB')
         else:
-             rgb_array_bgr = cv2.cvtColor(np.array(rgb_image), cv2.COLOR_RGB2BGR)
-             alpha_mask = np.ones((rgb_array_bgr.shape[0], rgb_array_bgr.shape[1]), dtype=bool)
+            rgb_pil = rgb_image
 
-        gray = cv2.cvtColor(rgb_array_bgr, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        edges = cv2.Canny(blurred, 50, 150)
-        edges = cv2.bitwise_and(edges, edges, mask=alpha_mask.astype(np.uint8))
-        lines = cv2.HoughLinesP(edges, rho=1, theta=np.pi / 180, threshold=40, minLineLength=30, maxLineGap=10)
+        inputs = processor(images=rgb_pil, return_tensors="pt")
+        inputs = {k: v.to(device) for k, v in inputs.items()}
 
-        road_mask = np.zeros_like(gray, dtype=np.uint8)
+        with torch.no_grad():
+            outputs = model(**inputs)
+            logits = outputs.logits
 
-        if lines is not None:
-            print(f"Найдено {len(lines)} потенциальных сегментов линий.")
-            for line in lines:
-                x1, y1, x2, y2 = line[0]
-                cv2.line(road_mask, (x1, y1), (x2, y2), 255, 3)
+        seg_map = logits.argmax(dim=1)[0].cpu().numpy()
 
-            kernel = np.ones((5,5), np.uint8)
-            road_mask = cv2.morphologyEx(road_mask, cv2.MORPH_CLOSE, kernel)
-            print("Применено морфологическое закрытие к маске дорог.")
-        else:
-            print("Не найдено линий (дорог) с помощью Hough Transform.")
+        road_id = 0
+        road_mask = np.where(seg_map == road_id, 255, 0).astype(np.uint8)
 
-        #cv2.imwrite(os.path.join(OUTPUT_DIR_ALGO, "road_mask_detected.png"), road_mask)
-        return road_mask
+        kernel = np.ones((5, 5), np.uint8)
+        road_mask_refined = cv2.morphologyEx(road_mask, cv2.MORPH_CLOSE, kernel)
+
+        print(f"Детекция дорог с HuggingFace завершена, найдено {np.sum(road_mask_refined > 0)} пикселей дорог")
+
+        return road_mask_refined
 
     except Exception as e:
-        print(f"Ошибка при детекции дорог: {e}")
-        return np.zeros((IMAGE_SIZE, IMAGE_SIZE), dtype=np.uint8)
+        print(f"Ошибка при детекции дорог через HuggingFace: {e}")
+        traceback.print_exc()
 
 def create_weight_map(water_mask, slope_map, road_mask,
                       water_cost_factor=20.0,
