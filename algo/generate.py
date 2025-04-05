@@ -21,7 +21,8 @@ import pyproj
 import time
 import traceback
 import torch
-from transformers import SegformerFeatureExtractor, SegformerForSemanticSegmentation
+from transformers import SegformerImageProcessor, SegformerForSemanticSegmentation
+import torch.nn.functional as F
 
 CLIENT_ID = os.getenv("SENTINEL_CLIENT_ID", "e04c0b5c-1411-481a-a893-88a379dc0f7b")
 CLIENT_SECRET = os.getenv("SENTINEL_CLIENT_SECRET", "yy0W4mgn0m46e4NK6inqg8N9aE5fjZlx")
@@ -35,7 +36,7 @@ CONSTRUCTION_COST_PER_KM_DIFFICULTY_UNIT = 5.0
 BASE_FUEL_CONSUMPTION_FACTOR = 1.0
 BASE_CONSTRUCTION_COST_FACTOR = 1.0
 
-feature_extractor = SegformerFeatureExtractor.from_pretrained("nickmuchi/segformer-b4-finetuned-segments-sidewalk")
+image_processor = SegformerImageProcessor.from_pretrained("nickmuchi/segformer-b4-finetuned-segments-sidewalk")
 model = SegformerForSemanticSegmentation.from_pretrained("nickmuchi/segformer-b4-finetuned-segments-sidewalk")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
@@ -258,12 +259,16 @@ def detect_roads(rgb_image):
         if rgb_image.mode != 'RGB':
             rgb_image = rgb_image.convert('RGB')
 
-        inputs = feature_extractor(images=rgb_image, return_tensors="pt").to(device)
+        orig_width, orig_height = rgb_image.size
+
+        inputs = image_processor(images=rgb_image, return_tensors="pt").to(device)
 
         with torch.no_grad():
             outputs = model(**inputs)
             logits = outputs.logits
-            pred_mask = torch.argmax(logits, dim=1)[0]
+
+            upsampled_logits = F.interpolate(logits, size=(orig_height, orig_width), mode="bilinear", align_corners=False)
+            pred_mask = torch.argmax(upsampled_logits, dim=1)[0]
 
         pred_np = pred_mask.cpu().numpy()
         road_mask = np.isin(pred_np, list(ROAD_CLASS_IDS)).astype(np.uint8) * 255
