@@ -20,6 +20,8 @@ from skimage.graph import route_through_array
 import pyproj
 import time
 import traceback
+import torch
+from transformers import SegformerFeatureExtractor, SegformerForSemanticSegmentation
 
 CLIENT_ID = os.getenv("SENTINEL_CLIENT_ID", "e04c0b5c-1411-481a-a893-88a379dc0f7b")
 CLIENT_SECRET = os.getenv("SENTINEL_CLIENT_SECRET", "yy0W4mgn0m46e4NK6inqg8N9aE5fjZlx")
@@ -32,6 +34,13 @@ FUEL_COST_PER_KM_DIFFICULTY_UNIT = 0.05
 CONSTRUCTION_COST_PER_KM_DIFFICULTY_UNIT = 5.0
 BASE_FUEL_CONSUMPTION_FACTOR = 1.0
 BASE_CONSTRUCTION_COST_FACTOR = 1.0
+
+feature_extractor = SegformerFeatureExtractor.from_pretrained("nickmuchi/segformer-b4-finetuned-segments-sidewalk")
+model = SegformerForSemanticSegmentation.from_pretrained("nickmuchi/segformer-b4-finetuned-segments-sidewalk")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
+model.eval()
+ROAD_CLASS_IDS = {1, 3, 4, 5, 6, 7}
 
 def get_access_token():
     url = "https://services.sentinel-hub.com/oauth/token"
@@ -239,46 +248,32 @@ def detect_slopes(dem_array):
     return slope_normalized.astype(np.float32)
 
 def detect_roads(rgb_image):
-    print("Детекция существующих дорог (упрощенная)...")
+    print("Детекция дорог с помощью SegFormer-B4...")
+
     if rgb_image is None:
         print("ВНИМАНИЕ: Нет RGB изображения для детекции дорог.")
-        return np.zeros((IMAGE_SIZE, IMAGE_SIZE), dtype=np.uint8)
+        return np.zeros((1024, 1024), dtype=np.uint8)
 
     try:
-        if rgb_image.mode == 'RGBA':
-             rgb_array = np.array(rgb_image)
-             alpha_mask = rgb_array[:, :, 3] > 0
-             rgb_array_bgr = cv2.cvtColor(rgb_array[:, :, :3], cv2.COLOR_RGB2BGR)
-        else:
-             rgb_array_bgr = cv2.cvtColor(np.array(rgb_image), cv2.COLOR_RGB2BGR)
-             alpha_mask = np.ones((rgb_array_bgr.shape[0], rgb_array_bgr.shape[1]), dtype=bool)
+        if rgb_image.mode != 'RGB':
+            rgb_image = rgb_image.convert('RGB')
 
-        gray = cv2.cvtColor(rgb_array_bgr, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        edges = cv2.Canny(blurred, 50, 150)
-        edges = cv2.bitwise_and(edges, edges, mask=alpha_mask.astype(np.uint8))
-        lines = cv2.HoughLinesP(edges, rho=1, theta=np.pi / 180, threshold=40, minLineLength=30, maxLineGap=10)
+        inputs = feature_extractor(images=rgb_image, return_tensors="pt").to(device)
 
-        road_mask = np.zeros_like(gray, dtype=np.uint8)
+        with torch.no_grad():
+            outputs = model(**inputs)
+            logits = outputs.logits
+            pred_mask = torch.argmax(logits, dim=1)[0]
 
-        if lines is not None:
-            print(f"Найдено {len(lines)} потенциальных сегментов линий.")
-            for line in lines:
-                x1, y1, x2, y2 = line[0]
-                cv2.line(road_mask, (x1, y1), (x2, y2), 255, 3)
+        pred_np = pred_mask.cpu().numpy()
+        road_mask = np.isin(pred_np, list(ROAD_CLASS_IDS)).astype(np.uint8) * 255
 
-            kernel = np.ones((5,5), np.uint8)
-            road_mask = cv2.morphologyEx(road_mask, cv2.MORPH_CLOSE, kernel)
-            print("Применено морфологическое закрытие к маске дорог.")
-        else:
-            print("Не найдено линий (дорог) с помощью Hough Transform.")
-
-        #cv2.imwrite(os.path.join(OUTPUT_DIR_ALGO, "road_mask_detected.png"), road_mask)
+        print("Дороги успешно детектированы.")
         return road_mask
 
     except Exception as e:
         print(f"Ошибка при детекции дорог: {e}")
-        return np.zeros((IMAGE_SIZE, IMAGE_SIZE), dtype=np.uint8)
+        return np.zeros((1024, 1024), dtype=np.uint8)
 
 def create_weight_map(water_mask, slope_map, road_mask,
                       water_cost_factor=20.0,

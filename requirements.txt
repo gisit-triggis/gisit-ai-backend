@@ -18,3 +18,5 @@ Pillow
 
 requests
 transformers
+torchvision
+torch
