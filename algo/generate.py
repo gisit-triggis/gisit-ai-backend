@@ -41,7 +41,7 @@ model = SegformerForSemanticSegmentation.from_pretrained("nickmuchi/segformer-b4
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 model.eval()
-ROAD_CLASS_IDS = {1, 3, 4, 5, 6, 7}
+ROAD_CLASS_IDS = {1}
 
 def get_access_token():
     url = "https://services.sentinel-hub.com/oauth/token"
