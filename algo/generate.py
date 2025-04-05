@@ -572,8 +572,10 @@ def visualize_results(rgb_image_pil, water_mask, slope_map, road_mask, cost_map,
     png_bytes = buf.getvalue()
     buf.close()
 
+    encoded = base64.b64encode(png_bytes).decode('utf-8')
+
     print("Визуализация создана и готова к отправке.")
-    return png_bytes
+    return encoded
 
 def create_routes_geojson(routes_data, transformer_backward, x_min, y_min, width_meters, height_meters, img_width, img_height):
     print("Создание GeoJSON для маршрутов...")
