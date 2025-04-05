@@ -20,9 +20,8 @@ from skimage.graph import route_through_array
 import pyproj
 import time
 import traceback
-import torch
-from transformers import SegformerImageProcessor, SegformerForSemanticSegmentation
-import torch.nn.functional as F
+import tensorflow as tf
+from huggingface_hub import hf_hub_download
 
 CLIENT_ID = os.getenv("SENTINEL_CLIENT_ID", "e04c0b5c-1411-481a-a893-88a379dc0f7b")
 CLIENT_SECRET = os.getenv("SENTINEL_CLIENT_SECRET", "yy0W4mgn0m46e4NK6inqg8N9aE5fjZlx")
@@ -36,12 +35,20 @@ CONSTRUCTION_COST_PER_KM_DIFFICULTY_UNIT = 5.0
 BASE_FUEL_CONSUMPTION_FACTOR = 1.0
 BASE_CONSTRUCTION_COST_FACTOR = 1.0
 
-image_processor = SegformerImageProcessor.from_pretrained("nickmuchi/segformer-b4-finetuned-segments-sidewalk")
-model = SegformerForSemanticSegmentation.from_pretrained("nickmuchi/segformer-b4-finetuned-segments-sidewalk")
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
-model.eval()
-ROAD_CLASS_IDS = {1}
+model_path = hf_hub_download(
+    repo_id="spectrewolf8/aerial-image-road-segmentation-with-U-NET-xp",
+    filename="aerial-image-road-segmentation-xp.keras"
+)
+
+# Загрузим модель с кастомными метриками заглушками (иначе она ругнётся)
+model = tf.keras.models.load_model(
+    model_path,
+    custom_objects={
+        "soft_dice_loss": lambda y_true, y_pred: 0.0,
+        "dice_coef": lambda y_true, y_pred: 0.0,
+        "iou_coef": lambda y_true, y_pred: 0.0
+    }
+)
 
 def get_access_token():
     url = "https://services.sentinel-hub.com/oauth/token"
@@ -256,25 +263,23 @@ def detect_roads(rgb_image):
         return np.zeros((1024, 1024), dtype=np.uint8)
 
     try:
+        print("Детекция дорог с помощью U-Net (spectrewolf8)...")
+
         if rgb_image.mode != 'RGB':
             rgb_image = rgb_image.convert('RGB')
 
-        orig_width, orig_height = rgb_image.size
+        img = rgb_image.resize((256, 256))
+        img_array = np.array(img).astype(np.float32) / 255.0
+        img_tensor = np.expand_dims(img_array, axis=0)
 
-        inputs = image_processor(images=rgb_image, return_tensors="pt").to(device)
+        pred = model.predict(img_tensor)[0, :, :, 0]
 
-        with torch.no_grad():
-            outputs = model(**inputs)
-            logits = outputs.logits
+        mask = (pred > 0.5).astype(np.uint8) * 255
 
-            upsampled_logits = F.interpolate(logits, size=(orig_height, orig_width), mode="bilinear", align_corners=False)
-            pred_mask = torch.argmax(upsampled_logits, dim=1)[0]
+        mask_resized = np.array(Image.fromarray(mask).resize(rgb_image.size))
 
-        pred_np = pred_mask.cpu().numpy()
-        road_mask = np.isin(pred_np, list(ROAD_CLASS_IDS)).astype(np.uint8) * 255
-
-        print("Дороги успешно детектированы.")
-        return road_mask
+        print("Готово.")
+        return mask_resized
 
     except Exception as e:
         print(f"Ошибка при детекции дорог: {e}")

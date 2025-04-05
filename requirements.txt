@@ -17,6 +17,5 @@ opencv-python
 Pillow
 
 requests
-transformers
-torchvision
-torch
+tensorflow
+huggingface_hub
