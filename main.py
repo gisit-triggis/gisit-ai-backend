@@ -34,7 +34,7 @@ class RouteGeneratorServicer(routegenerator_pb2_grpc.RouteGeneratorServicer):
                 end_lon_lat=end_lon_lat
             )
 
-            response.visualization_png = algo_result.get("visualization_png", b'')
+            response.visualization_png = algo_result.get("visualization_png", '')
             response.routes_geojson = algo_result.get("routes_geojson", '{"type": "FeatureCollection", "features": []}')
             response.route_costs.extend(algo_result.get("route_costs", []))
             response.status_message = algo_result.get("status_message", "Статус не определен")
@@ -53,7 +53,7 @@ class RouteGeneratorServicer(routegenerator_pb2_grpc.RouteGeneratorServicer):
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Внутренняя ошибка сервера: {e}")
             response.status_message = f"Внутренняя ошибка сервера: {e}"
-            response.visualization_png = b''
+            response.visualization_png = ''
             response.routes_geojson = '{"type": "FeatureCollection", "features": []}'
             del response.route_costs[:]
 
