@@ -17,10 +17,9 @@ load_dotenv()
 
 hf_token = os.getenv("HF_TOKEN")
 
-login(hf_token)
 model_name = "mistralai/Mistral-7B-Instruct-v0.2"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", torch_dtype=torch.float16)
+tokenizer = AutoTokenizer.from_pretrained(model_name, token=hf_token)
+model = AutoModelForCausalLM.from_pretrained(model_name, token=hf_token, device_map="auto", torch_dtype=torch.float16)
 
 class HealthServicer(health_pb2_grpc.HealthServicer):
     def Check(self, request, context):
