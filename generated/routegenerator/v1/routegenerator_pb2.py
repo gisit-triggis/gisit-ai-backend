@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n&routegenerator/v1/routegenerator.proto\x12\x0eroutegenerator\"}\n\x15GenerateRoutesRequest\x12\x18\n\x10geojson_geometry\x18\x01 \x01(\t\x12\x12\n\nnum_routes\x18\x02 \x01(\x05\x12\x1b\n\x13start_point_lon_lat\x18\x03 \x03(\x01\x12\x19\n\x11\x65nd_point_lon_lat\x18\x04 \x03(\x01\"\xc1\x01\n\tRouteCost\x12\x10\n\x08route_id\x18\x01 \x01(\x05\x12\x11\n\tpath_cost\x18\x02 \x01(\x01\x12\x1d\n\x15\x65stimated_distance_km\x18\x03 \x01(\x01\x12!\n\x19\x65stimated_fuel_cost_units\x18\x04 \x01(\x01\x12)\n!estimated_construction_cost_units\x18\x05 \x01(\x01\x12\"\n\x1atotal_estimated_cost_units\x18\x06 \x01(\x01\"\x93\x01\n\x16GenerateRoutesResponse\x12\x19\n\x11visualization_png\x18\x01 \x01(\t\x12\x16\n\x0eroutes_geojson\x18\x02 \x01(\t\x12.\n\x0broute_costs\x18\x03 \x03(\x0b\x32\x19.routegenerator.RouteCost\x12\x16\n\x0estatus_message\x18\x04 \x01(\t2q\n\x0eRouteGenerator\x12_\n\x0eGenerateRoutes\x12%.routegenerator.GenerateRoutesRequest\x1a&.routegenerator.GenerateRoutesResponseB^Z$./routegenerator/v1;routegeneratorv1\xca\x02\x13GRPC\\RouteGenerator\xe2\x02\x1fGRPC\\RouteGenerator\\GPBMetadatab\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n&routegenerator/v1/routegenerator.proto\x12\x0eroutegenerator\"}\n\x15GenerateRoutesRequest\x12\x18\n\x10geojson_geometry\x18\x01 \x01(\t\x12\x12\n\nnum_routes\x18\x02 \x01(\x05\x12\x1b\n\x13start_point_lon_lat\x18\x03 \x03(\x01\x12\x19\n\x11\x65nd_point_lon_lat\x18\x04 \x03(\x01\"\xc1\x01\n\tRouteCost\x12\x10\n\x08route_id\x18\x01 \x01(\x05\x12\x11\n\tpath_cost\x18\x02 \x01(\x01\x12\x1d\n\x15\x65stimated_distance_km\x18\x03 \x01(\x01\x12!\n\x19\x65stimated_fuel_cost_units\x18\x04 \x01(\x01\x12)\n!estimated_construction_cost_units\x18\x05 \x01(\x01\x12\"\n\x1atotal_estimated_cost_units\x18\x06 \x01(\x01\"\x93\x01\n\x16GenerateRoutesResponse\x12\x19\n\x11visualization_png\x18\x01 \x01(\t\x12\x16\n\x0eroutes_geojson\x18\x02 \x01(\t\x12.\n\x0broute_costs\x18\x03 \x03(\x0b\x32\x19.routegenerator.RouteCost\x12\x16\n\x0estatus_message\x18\x04 \x01(\t\"X\n\x10\x41ssistantRequest\x12\x10\n\x08question\x18\x01 \x01(\t\x12 \n\x18\x63urrent_location_lon_lat\x18\x02 \x03(\x01\x12\x10\n\x08route_id\x18\x03 \x01(\t\"W\n\x11\x41ssistantResponse\x12\x0e\n\x06\x61nswer\x18\x01 \x01(\t\x12\x1b\n\x13recommended_actions\x18\x02 \x03(\t\x12\x15\n\rwarning_level\x18\x03 \x01(\t2\xc6\x01\n\x0eRouteGenerator\x12_\n\x0eGenerateRoutes\x12%.routegenerator.GenerateRoutesRequest\x1a&.routegenerator.GenerateRoutesResponse\x12S\n\x0c\x41skAssistant\x12 .routegenerator.AssistantRequest\x1a!.routegenerator.AssistantResponseB^Z$./routegenerator/v1;routegeneratorv1\xca\x02\x13GRPC\\RouteGenerator\xe2\x02\x1fGRPC\\RouteGenerator\\GPBMetadatab\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -38,6 +38,10 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_ROUTECOST']._serialized_end=379
   _globals['_GENERATEROUTESRESPONSE']._serialized_start=382
   _globals['_GENERATEROUTESRESPONSE']._serialized_end=529
-  _globals['_ROUTEGENERATOR']._serialized_start=531
-  _globals['_ROUTEGENERATOR']._serialized_end=644
+  _globals['_ASSISTANTREQUEST']._serialized_start=531
+  _globals['_ASSISTANTREQUEST']._serialized_end=619
+  _globals['_ASSISTANTRESPONSE']._serialized_start=621
+  _globals['_ASSISTANTRESPONSE']._serialized_end=708
+  _globals['_ROUTEGENERATOR']._serialized_start=711
+  _globals['_ROUTEGENERATOR']._serialized_end=909
 # @@protoc_insertion_point(module_scope)

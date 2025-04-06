@@ -39,12 +39,23 @@ class RouteGeneratorStub(object):
                 request_serializer=routegenerator_dot_v1_dot_routegenerator__pb2.GenerateRoutesRequest.SerializeToString,
                 response_deserializer=routegenerator_dot_v1_dot_routegenerator__pb2.GenerateRoutesResponse.FromString,
                 _registered_method=True)
+        self.AskAssistant = channel.unary_unary(
+                '/routegenerator.RouteGenerator/AskAssistant',
+                request_serializer=routegenerator_dot_v1_dot_routegenerator__pb2.AssistantRequest.SerializeToString,
+                response_deserializer=routegenerator_dot_v1_dot_routegenerator__pb2.AssistantResponse.FromString,
+                _registered_method=True)
 
 
 class RouteGeneratorServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def GenerateRoutes(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AskAssistant(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -57,6 +68,11 @@ def add_RouteGeneratorServicer_to_server(servicer, server):
                     servicer.GenerateRoutes,
                     request_deserializer=routegenerator_dot_v1_dot_routegenerator__pb2.GenerateRoutesRequest.FromString,
                     response_serializer=routegenerator_dot_v1_dot_routegenerator__pb2.GenerateRoutesResponse.SerializeToString,
+            ),
+            'AskAssistant': grpc.unary_unary_rpc_method_handler(
+                    servicer.AskAssistant,
+                    request_deserializer=routegenerator_dot_v1_dot_routegenerator__pb2.AssistantRequest.FromString,
+                    response_serializer=routegenerator_dot_v1_dot_routegenerator__pb2.AssistantResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -86,6 +102,33 @@ class RouteGenerator(object):
             '/routegenerator.RouteGenerator/GenerateRoutes',
             routegenerator_dot_v1_dot_routegenerator__pb2.GenerateRoutesRequest.SerializeToString,
             routegenerator_dot_v1_dot_routegenerator__pb2.GenerateRoutesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AskAssistant(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/routegenerator.RouteGenerator/AskAssistant',
+            routegenerator_dot_v1_dot_routegenerator__pb2.AssistantRequest.SerializeToString,
+            routegenerator_dot_v1_dot_routegenerator__pb2.AssistantResponse.FromString,
             options,
             channel_credentials,
             insecure,
