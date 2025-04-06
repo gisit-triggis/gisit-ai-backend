@@ -1,6 +1,4 @@
-FROM python:3.10-slim
-
-WORKDIR /app
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -20,11 +18,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libatlas-base-dev \
     libopencv-dev \
     python3-dev \
+    python3-pip \
+    python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pip install --upgrade pip
+
+WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["python", "main.py"]
+CMD ["python3", "main.py"]
