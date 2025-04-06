@@ -10,11 +10,12 @@ from generated.routegenerator.v1 import routegenerator_pb2_grpc, routegenerator_
 
 from algo.generate import generate
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from huggingface_hub import login
+from huggingface_hub import login, HfFolder
 from dotenv import load_dotenv
 
 load_dotenv()
 
+print(HfFolder.get_token())
 hf_token = os.getenv("HF_TOKEN")
 
 model_name = "mistralai/Mistral-7B-Instruct-v0.2"
