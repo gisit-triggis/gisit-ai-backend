@@ -9,18 +9,6 @@ from generated.health.v1 import health_pb2_grpc, health_pb2
 from generated.routegenerator.v1 import routegenerator_pb2_grpc, routegenerator_pb2
 
 from algo.generate import generate
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from huggingface_hub import login, HfFolder
-from dotenv import load_dotenv
-
-load_dotenv()
-
-print(HfFolder.get_token())
-hf_token = os.getenv("HF_TOKEN")
-
-model_name = "mistralai/Mistral-7B-Instruct-v0.2"
-tokenizer = AutoTokenizer.from_pretrained(model_name, token=hf_token)
-model = AutoModelForCausalLM.from_pretrained(model_name, token=hf_token, device_map="auto", torch_dtype=torch.float16)
 
 class HealthServicer(health_pb2_grpc.HealthServicer):
     def Check(self, request, context):
@@ -72,31 +60,6 @@ class RouteGeneratorServicer(routegenerator_pb2_grpc.RouteGeneratorServicer):
         print(f">>> Request handled in {time.time() - start_time_server:.2f} seconds")
         return response
 
-class FieldAssistantServicer(routegenerator_pb2_grpc.FieldAssistantServicer):
-    def AskAssistant(self, request, context):
-        print(f">>> FieldAssistant called with: {request.question}")
-
-        user_prompt = f"""\
-        Ты — полевой помощник для водителя автозимника. Водитель сейчас на координатах {request.current_location_lon_lat}, \
-        находится на маршруте {request.route_id}. Вот его вопрос: "{request.question}"
-
-        Ответь кратко и по делу, если ситуация опасная — предупреди, и посоветуй действия.
-        """
-
-        try:
-            inputs = tokenizer(user_prompt, return_tensors="pt").to("cuda")
-            outputs = model.generate(**inputs, max_new_tokens=256)
-            answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-            return routegenerator_pb2.AssistantResponse(
-                answer=answer,
-                recommended_actions=["Оценить толщину льда", "Остановиться и позвонить в диспетчерскую"],
-                warning_level="danger" if "опасн" in answer.lower() or "лед" in answer.lower() else "warning"
-            )
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return routegenerator_pb2.AssistantResponse(answer="Ошибка обработки запроса", warning_level="warning")
 
 def serve():
     max_message_length = 10 * 1024 * 1024
@@ -110,7 +73,6 @@ def serve():
 
     health_pb2_grpc.add_HealthServicer_to_server(HealthServicer(), server)
     routegenerator_pb2_grpc.add_RouteGeneratorServicer_to_server(RouteGeneratorServicer(), server)
-    routegenerator_pb2_grpc.add_FieldAssistantServicer_to_server(FieldAssistantServicer(), server)
 
     port = os.getenv("GRPC_PORT", "9090")
     listen_address = f'[::]:{port}'

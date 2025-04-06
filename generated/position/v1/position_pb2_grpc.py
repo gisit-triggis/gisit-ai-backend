@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from . import position_pb2 as position_dot_v1_dot_position__pb2
+from .  import position_pb2 as position_dot_v1_dot_position__pb2
 
 GRPC_GENERATED_VERSION = '1.71.0'
 GRPC_VERSION = grpc.__version__

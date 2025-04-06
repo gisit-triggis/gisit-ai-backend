@@ -19,5 +19,3 @@ Pillow
 requests
 tensorflow
 huggingface_hub
-transformers
-python-dotenv
